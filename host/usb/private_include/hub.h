@@ -128,6 +128,34 @@ esp_err_t hub_root_start(void);
 esp_err_t hub_root_stop(void);
 
 /**
+ * @brief Start one selected Hub driver root port
+ *
+ * @param[in] port_num Zero-based HCD root port index
+ * @return
+ *    - ESP_OK: Selected root port has been powered on
+ *    - ESP_ERR_INVALID_ARG: Root port index is outside the supported range
+ *    - ESP_ERR_NOT_FOUND: Selected root port is not enabled
+ *    - ESP_ERR_INVALID_STATE: Hub is not installed or port is not unpowered
+ */
+esp_err_t hub_root_port_start(int port_num);
+
+/**
+ * @brief Stop one selected Hub driver root port
+ *
+ * Powering off a selected root port disconnects devices below that
+ * root only. Stopping an already unpowered enabled port is idempotent.
+ *
+ * @param[in] port_num Zero-based HCD root port index
+ * @return
+ *    - ESP_OK: Selected root port is powered off or was already off
+ *    - ESP_ERR_INVALID_ARG: Root port index is outside the supported range
+ *    - ESP_ERR_NOT_FOUND: Selected root port is not enabled
+ *    - ESP_ERR_INVALID_STATE: Hub driver is not installed
+ *    - Other errors returned by the HCD power command
+ */
+esp_err_t hub_root_port_stop(int port_num);
+
+/**
  * @brief Check if a root port is in suspended state
  *
  * This will check root port state. In multi-port configurations, this currently

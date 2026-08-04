@@ -919,6 +919,64 @@ esp_err_t hub_root_stop(void)
     return ESP_OK;
 }
 
+esp_err_t hub_root_port_start(int port_num)
+{
+    if (port_num < 0 || port_num >= HCD_NUM_PORTS) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    HUB_DRIVER_ENTER_CRITICAL();
+    HUB_DRIVER_CHECK_FROM_CRIT(p_hub_driver_obj != NULL, ESP_ERR_INVALID_STATE);
+    root_hub_port_t *root_port = &p_hub_driver_obj->root_hub_ports[port_num];
+    HUB_DRIVER_CHECK_FROM_CRIT(root_port->constant.hdl != NULL, ESP_ERR_NOT_FOUND);
+    HUB_DRIVER_CHECK_FROM_CRIT(root_port->dynamic.state == ROOT_PORT_STATE_NOT_POWERED,
+                               ESP_ERR_INVALID_STATE);
+    hcd_port_handle_t root_port_hdl = root_port->constant.hdl;
+    HUB_DRIVER_EXIT_CRITICAL();
+
+    const esp_err_t ret = hcd_port_command(root_port_hdl, HCD_PORT_CMD_POWER_ON);
+    if (ret != ESP_OK) {
+        ESP_LOGD(HUB_DRIVER_TAG, "Root port %d power on failed", port_num);
+        return ret;
+    }
+
+    HUB_DRIVER_ENTER_CRITICAL();
+    root_port->dynamic.state = ROOT_PORT_STATE_POWERED;
+    HUB_DRIVER_EXIT_CRITICAL();
+    return ESP_OK;
+}
+
+esp_err_t hub_root_port_stop(int port_num)
+{
+    if (port_num < 0 || port_num >= HCD_NUM_PORTS) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    HUB_DRIVER_ENTER_CRITICAL();
+    HUB_DRIVER_CHECK_FROM_CRIT(p_hub_driver_obj != NULL, ESP_ERR_INVALID_STATE);
+    root_hub_port_t *root_port = &p_hub_driver_obj->root_hub_ports[port_num];
+    HUB_DRIVER_CHECK_FROM_CRIT(root_port->constant.hdl != NULL, ESP_ERR_NOT_FOUND);
+    if (root_port->dynamic.state == ROOT_PORT_STATE_NOT_POWERED) {
+        HUB_DRIVER_EXIT_CRITICAL();
+        return ESP_OK;
+    }
+
+    const root_port_state_t previous_state = root_port->dynamic.state;
+    hcd_port_handle_t root_port_hdl = root_port->constant.hdl;
+    root_port->dynamic.state = ROOT_PORT_STATE_NOT_POWERED;
+    HUB_DRIVER_EXIT_CRITICAL();
+
+    const esp_err_t ret = hcd_port_command(root_port_hdl, HCD_PORT_CMD_POWER_OFF);
+    if (ret != ESP_OK) {
+        HUB_DRIVER_ENTER_CRITICAL();
+        root_port->dynamic.state = previous_state;
+        HUB_DRIVER_EXIT_CRITICAL();
+        ESP_LOGD(HUB_DRIVER_TAG, "Root port %d power off failed", port_num);
+        return ret;
+    }
+    return ESP_OK;
+}
+
 bool hub_root_is_suspended(void)
 {
     HUB_DRIVER_ENTER_CRITICAL();

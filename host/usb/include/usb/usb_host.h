@@ -267,6 +267,27 @@ esp_err_t usb_host_lib_info(usb_host_lib_info_t *info_ret);
 esp_err_t usb_host_lib_set_root_port_power(bool enable);
 
 /**
+ * @brief Power one selected root port ON or OFF
+ *
+ * This function is the multi-controller counterpart of
+ * usb_host_lib_set_root_port_power(). It affects only the selected
+ * enabled root port and leaves every other root port unchanged.
+ *
+ * For a device connected directly to a root controller, the value
+ * reported in usb_device_info_t.parent.port_num is the
+ * root_port_index used by this API when parent.dev_hdl is NULL.
+ *
+ * @param[in] root_port_index Zero-based HCD root port index
+ * @param[in] enable True to power the selected root port ON, false to power it OFF
+ * @return
+ *    - ESP_OK: Selected root port power enabled/disabled
+ *    - ESP_ERR_INVALID_ARG: Root port index is outside the supported range
+ *    - ESP_ERR_NOT_FOUND: Root port is not enabled by peripheral_map
+ *    - ESP_ERR_INVALID_STATE: Hub is not installed or state forbids the request
+ */
+esp_err_t usb_host_lib_set_root_port_power_by_index(uint8_t root_port_index, bool enable);
+
+/**
  * @brief Suspend the root port
  *
  * - The function checks, if a device is connected and if a transfer is submitted

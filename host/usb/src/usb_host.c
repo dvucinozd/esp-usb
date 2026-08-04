@@ -990,6 +990,14 @@ esp_err_t usb_host_lib_set_root_port_power(bool enable)
     return ret;
 }
 
+esp_err_t usb_host_lib_set_root_port_power_by_index(uint8_t root_port_index, bool enable)
+{
+    if (enable) {
+        return hub_root_port_start((int)root_port_index);
+    }
+    return hub_root_port_stop((int)root_port_index);
+}
+
 esp_err_t usb_host_lib_root_port_suspend(void)
 {
     HOST_ENTER_CRITICAL();
