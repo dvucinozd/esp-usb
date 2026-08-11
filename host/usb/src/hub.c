@@ -1236,7 +1236,16 @@ esp_err_t hub_node_recycle(unsigned int node_uid)
     }
 
     if (ret == ESP_OK) {
-        ESP_ERROR_CHECK(dev_tree_node_remove_by_parent(dev_tree_node->parent, dev_tree_node->port_num));
+        // A physical disconnect can be processed after the DEV_FREE event was
+        // queued but before this recycle path removes the node. The disconnect
+        // handler owns the same node and may therefore have removed it already.
+        // Both orderings complete the requested recycle, so a missing node is
+        // benign; preserve fatal handling for every other unexpected error.
+        const esp_err_t remove_ret =
+            dev_tree_node_remove_by_parent(dev_tree_node->parent, dev_tree_node->port_num);
+        if (remove_ret != ESP_OK && remove_ret != ESP_ERR_NOT_FOUND) {
+            ESP_ERROR_CHECK(remove_ret);
+        }
     }
 
     return ret;

@@ -158,6 +158,9 @@ Purpose:
 - Regression test for the race between the root port disconnect handler and the
   device recycle path that previously aborted with ESP_ERR_NOT_FOUND from
   dev_tree_node_dev_gone() (espressif/esp-idf#18366).
+- The inverse ordering is also valid: the disconnect handler may remove the
+  node before USBH_EVENT_DEV_FREE reaches hub_node_recycle(). That recycle path
+  must likewise treat ESP_ERR_NOT_FOUND as a completed removal.
 - Verify that a HCD_PORT_EVENT_DISCONNECTION raised after the dev_tree_node has
   already been removed via USBH_EVENT_DEV_FREE -> hub_node_recycle is handled
   gracefully instead of aborting via ESP_ERROR_CHECK.
